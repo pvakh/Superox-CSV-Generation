@@ -276,6 +276,7 @@ PROCEDURE write_run_file (pProcess_id NUMBER, pRun_num NUMBER) IS
     vFetchedRow varchar2(4000);
     vRecord_count  number;
     CSV_CUR sys_refcursor;
+    sql_err Varchar2(200);
 BEGIN
     -- Filename includes 'MASTER' so we don't overwrite tape files
     vFile_name := 'P'||pProcess_id||'-R'||pRun_num||'-MASTER_ALL_TAPES.tsv';
@@ -286,12 +287,10 @@ BEGIN
     -- Get the SQL Blueprint from your DATA_PROCESS_VIEWS
     -- We remove the 'global_run_id' filter and use 'run_id' instead
     SELECT csv_headers, 
-           -- Note: We replace the specific global_run_id filter with run_id filter
-           replace(query_to_csv, 'global_run_id =', 'run_id = '||pRun_num|| ' --')
+           query_to_csv||' and run_id='||pRun_num||' order by position'
     INTO vCSV_headers, vQuery
     FROM data_process_views
-    WHERE process_id = pProcess_id
-    AND version_id = (SELECT max(version_id) FROM process_results WHERE process_id = pProcess_id);
+    WHERE process_id = pProcess_id;
 
     -- Write Header
     utl_file.put_line(file_handle, vCSV_headers);
